@@ -7,3 +7,7 @@
 *.log
 *.tmp
 /libtorch
+/onnxruntime
+*.pt
+*.onnx
+my_ai_app
