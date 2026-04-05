@@ -20,9 +20,25 @@ int main(int argc, char* argv[]) {
         8                           
     ); 
     global_ai_instance = ai; 
-    
     set_external_bbox_callback(my_external_bbox_callback);
     ai->run_deepstream();
+    
+    bool record_flag = false;
+    
+    std::cout << "SES KAYDI KONTROLU:" << std::endl;
+    std::cout << "Kaydi BASLATMAK icin [ENTER] tusuna basin." << std::endl;
+    std::cout << "Kaydi DURDURMAK icin tekrar [ENTER] tusuna basin." << std::endl;
+
+    while(true) {
+        std::cin.get(); 
+        record_flag = !record_flag; 
+
+        if (record_flag == true) {
+            ai->start_recording();
+        } else {
+            ai->stop_recording();
+        }
+    }
     
     delete ai;
     return 0;

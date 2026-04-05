@@ -59,8 +59,6 @@ class AudioModel {
         AudioModel(const std::string& model_path, int sample_rate = 16000, int max_sec = 8) 
             : target_sr(sample_rate), max_seconds(max_sec) {
             
-            std::cout << "[AudioModel::Constructor] Initializing AudioModel with Target SR: " << target_sr << ", Max Sec: " << max_seconds << std::endl;
-            
             try {
                 model = torch::jit::load(model_path);
                 model.eval();
@@ -85,24 +83,23 @@ class AudioModel {
         }
 
         ~AudioModel() {
-            std::cout << "[AudioModel::Destructor] Uninitializing microphone device and destroying model." << std::endl;
             ma_device_uninit(&device);
         }
 
         void start_recording() {
-            std::cout << "[AudioModel::start_recording] Starting audio capture..." << std::endl;
             {
                 std::lock_guard<std::mutex> lock(buffer_mutex);
                 audio_buffer.clear();
             }
             is_recording = true;
             ma_device_start(&device); 
+            std::cout << "[AudioModel::start_recording] Recording started..." << std::endl;
         }
 
         void stop_recording() {
-            std::cout << "[AudioModel::stop_recording] Stopping audio capture..." << std::endl;
             is_recording = false;
             ma_device_stop(&device); 
+            std::cout << "[AudioModel::stop_recording] Recording stopped." << std::endl;
         }
 
         torch::Tensor toTorchTensor() {
@@ -123,8 +120,6 @@ class AudioModel {
         }
 
         torch::Tensor inference(torch::Tensor final_audio) {
-            std::cout << "[AudioModel::inference] Preparing to run model inference..." << std::endl;
-
             if (final_audio.numel() == 0) {
                 std::cerr << "[AudioModel::inference] ERROR: Received empty tensor for inference!" << std::endl;
                 return torch::empty({0});
@@ -133,17 +128,15 @@ class AudioModel {
             try {
                 std::vector<torch::jit::IValue> inputs;
                 inputs.push_back(final_audio);
-                
-                std::cout << "[AudioModel::inference] Forward pass started..." << std::endl;
                 torch::Tensor output = model.forward(inputs).toTensor();
-                std::cout << "[AudioModel::inference] Forward pass completed successfully." << std::endl;
-                
+                std::cout << "[AudioModel::inference] Audio inference completed successfully." << std::endl;
                 torch::Tensor flat_out = output.view({-1});
+                std::cout << "[AudioModel::inference] Raw model output: " << flat_out[0].item<float>() << ", " << flat_out[1].item<float>() << ", " << flat_out[2].item<float>() << std::endl;
                 
                 targets.clear();
                 for (int i = 0; i < flat_out.size(0); ++i) {
                     float val = flat_out[i].item<float>();
-                    targets.push_back(val > 0.55f); 
+                    targets.push_back(val > 0.5f); 
                 }
                 
                 return output;
@@ -187,7 +180,6 @@ class AudioModel {
         }
 };
 
-
 class AI {
     private:
         std::string ds_config_file_path;              
@@ -208,55 +200,58 @@ class AI {
         }
 
         void run_deepstream() {
-            std::vector<std::string> args = { "my_ai_app", "-c", ds_config_file_path };
-            std::vector<char*> fake_argv;
-            for (const auto& arg : args) { fake_argv.push_back(strdup(arg.c_str())); }
-            fake_argv.push_back(nullptr);
+            std::thread ds_thread([this]() {
+                std::vector<std::string> args = { "my_ai_app", "-c", this->ds_config_file_path };
+                std::vector<char*> fake_argv;
+                for (const auto& arg : args) { fake_argv.push_back(strdup(arg.c_str())); }
+                fake_argv.push_back(nullptr);
 
-            std::cout << "\n[AI] DeepStream Pipeline baslatiliyor..." << std::endl;
-            deepstream_app_main(fake_argv.size() - 1, fake_argv.data());
+                deepstream_app_main(fake_argv.size() - 1, fake_argv.data());
 
-            for (size_t i = 0; i < fake_argv.size() - 1; ++i) { free(fake_argv[i]); }
+                for (size_t i = 0; i < fake_argv.size() - 1; ++i) { 
+                    free(fake_argv[i]); 
+                }
+            });
+            ds_thread.detach(); 
         }
 
+        // Bounding box verileriyle başka işlemler yapacaksanız burayı kullanabilirsiniz.
+        // Ancak ses kaydı artık kullanıcının manuel kontrolünde olduğu için buradan çıkarıldı.
         void process_bboxes(DstObjectData* obj_list, int num_objects, int frame_num) {
-            // her frame'de burası tetiklenir
+            
+        }
 
-            if (!is_audio_busy.load()) { // if audio is not busy
-                
+        // KULLANICI TETİKLEMESİ İÇİN YENİ FONKSİYON: BAŞLAT
+        void start_recording() {
+            if (!is_audio_busy.load()) {
                 is_audio_busy.store(true);
-                std::thread([this]() {
-                    this->start_recording_for_target(); 
-                    std::this_thread::sleep_for(std::chrono::seconds(3));
-                    this->stop_recording_and_infer();
-                    this->is_audio_busy.store(false); 
-                }).detach(); // detach() komutu bu işlemi ana programdan bağımsız kılar.
+                audio_model->start_recording();
+            } else {
+                std::cout << "[AI] Uyari: Ses kaydi zaten devam ediyor!" << std::endl;
             }
-
         }
 
-        void start_recording_for_target() {
-            if (!audio_model) return;
-            audio_model->start_recording();
+        // KULLANICI TETİKLEMESİ İÇİN YENİ FONKSİYON: DURDUR VE ÇIKARIM YAP
+        void stop_recording() {
+            if (is_audio_busy.load()) {
+                audio_model->stop_recording();
+                std::thread([this]() {
+                    this->audio_inference();
+                    this->is_audio_busy.store(false); // İşlem bitince kilidi aç
+                }).detach();
+            } else {
+                std::cout << "[AI] Uyari: Su anda devam eden bir ses kaydi yok!" << std::endl;
+            }
         }
 
-        void stop_recording_and_infer() {
+    private:
+        void audio_inference() {
             if (!audio_model) return;
 
-            audio_model->stop_recording();
             torch::Tensor audio_tensor = audio_model->toTorchTensor();
             torch::Tensor result = audio_model->inference(audio_tensor);
-            
             std::vector<bool> targets = audio_model->get_targets();
-
-            std::cout << "\n=============================================" << std::endl;
-            std::cout << "[AI] TAHMIN SONUCU:" << std::endl;
-            if (targets.size() >= 3) {
-                std::cout << "RED   : " << (targets[0] ? "TRUE" : "FALSE") << std::endl;
-                std::cout << "GREEN : " << (targets[1] ? "TRUE" : "FALSE") << std::endl;
-                std::cout << "BLUE  : " << (targets[2] ? "TRUE" : "FALSE") << std::endl;
-            }
-            std::cout << "=============================================\n" << std::endl;
+            std::cout << "[AI] TAHMIN SONUCU: R=" << targets[0] << " G=" << targets[1] << " B=" << targets[2] << std::endl;
         }
 };
 #endif // AICLASS_HPP
