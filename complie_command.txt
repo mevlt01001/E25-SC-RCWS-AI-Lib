@@ -1,11 +1,12 @@
-export CUDA_VER=12.6
-make
-g++ AIClas.cpp -o my_ai_app -I/usr/include/gstreamer-1.0 -I/usr/include/glib-2.0 -I/usr/lib/aarch64-linux-gnu/glib-2.0/include -I/opt/nvidia/deepstream/deepstream-7.1/sources/apps/apps-common/includes -I/opt/nvidia/deepstream/deepstream-7.1/sources/includes -I/usr/local/cuda-12.6/include -L. build/libdeepstream-app.so -L/opt/nvidia/deepstream/deepstream-7.1/lib/ -lnvdsgst_meta -lnvds_meta -lnvds_utils -Wl,-rpath,. -Wl,-rpath,/opt/nvidia/deepstream/deepstream-7.1/lib/
-./my_ai_app -c /home/orin2/Downloads/customDeepstreamSample/deepstream_app.txt
+miniconda create -n libtorch python=3.10
 
-wget https://download.pytorch.org/libtorch/cu126/libtorch-shared-with-deps-2.11.0%2Bcu126.zip
-unzip libtorch-shared-with-deps-2.11.0+cu126.zip 
+(libtorch) pip install torch==2.6.0 torchvision==0.21.0 torchaudio==2.6.0 --index-url https://download.pytorch.org/whl/cpu
 
- pip install torch==2.6.0 torchvision==0.21.0 torchaudio==2.6.0 --index-url https://download.pytorch.org/whl/cpu
-Looking in indexes: https://download.pytorch.org/whl/cpu
+//make
 
+g++ main.cpp -Iinclude/ -L./build -lAI_class \
+-Wl,-rpath,./build \
+-Wl,-rpath-link,/home/orin2/miniconda3/envs/libtorch/lib/python3.10/site-packages/torch/lib \
+-Wl,-rpath-link,/home/orin2/miniconda3/envs/libtorch/lib/python3.10/site-packages/torch.libs \
+-Wl,-rpath-link,/home/orin2/miniconda3/envs/libtorch/lib \
+-o my_app

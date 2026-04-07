@@ -11,3 +11,4 @@
 *.pt
 *.onnx
 my_ai_app
+/src

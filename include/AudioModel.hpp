@@ -1,33 +1,28 @@
 #ifndef AUDIO_MODEL_HPP
 #define AUDIO_MODEL_HPP
 
-#define DR_WAV_IMPLEMENTATION
-#include "dr_wav.h"
-#define MINIAUDIO_IMPLEMENTATION
-#include "miniaudio.h"
-
-#include <torch/torch.h>
-#include <string>
 #include <vector>
-#include <mutex>
-#include <atomic>
+#include <torch/torch.h>
+#include "dr_wav.h"
+#include "miniaudio.h"
 
 class AudioModel {
     private:
-        bool is_recording;          
+        // holds whether AudioModel recording? 
+        bool is_recording;
+        // recorded audio data
+        std::vector<float> audio_buffer;    
         torch::jit::script::Module model;   
         ma_device device;                   
         ma_device_config deviceConfig;      
-        std::vector<float> audio_buffer;    
         std::mutex buffer_mutex;                                                
         std::string ds_config_file_path;              
         std::string audio_model_file_path;             
         int target_sr;                                      
         int max_seconds;                                     
-        std::vector<bool> current_targets; 
+        std::vector<bool> targets;          
         AudioModel* audio_model;                            
         std::atomic<bool> is_audio_busy{false};
-        std::vector<bool> targets;          
 
         static void data_callback(ma_device* pDevice, void* pOutput, const void* pInput, ma_uint32 frameCount);
 
