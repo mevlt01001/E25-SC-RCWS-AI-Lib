@@ -6,11 +6,35 @@
 #include "dr_wav.h"
 #include "miniaudio.h"
 
+//TODO: DOCs each entity
+
+/*
+AudioModel class works to access mic, to record audio data and provide inference funcitons it on torch::jit.
+Example:
+``` 
+    AudioModel* audio_model = new AudioModel("path/to/model.pt", 16000, 8);
+    audio_model->start_recording(); // Starts the voice recording.
+    audio_model->stop_recording();  // Stops the voice recording.
+
+    // Access to the recorded data
+    std::vector<float>* audio_data = audio_model->get_audio_buffer();
+
+    // Access info if voice recording
+    bool audio_recording = audio_model->get_is_recording();
+
+    // Convert to torch tensor from vector
+    torch::Tensor audio_tensor = audio_model->toTorchTensor();
+
+    // Inference on torch::jit
+    torch::Tensor result = audio_model->inference(audio_tensor);
+
+    // Access to targets 
+    std::vector<bool>& targets = audio_model->get_targets();
+```
+*/
 class AudioModel {
     private:
-        // holds whether AudioModel recording? 
         bool is_recording;
-        // recorded audio data
         std::vector<float> audio_buffer;    
         torch::jit::script::Module model;   
         ma_device device;                   
