@@ -6,8 +6,6 @@
 #include "dr_wav.h"
 #include "miniaudio.h"
 
-//TODO: DOCs each entity
-
 /*
 AudioModel is a thread-safe class works to access mic, to record audio data and provide inference funcitons it on `torch::jit`.
 Example:
