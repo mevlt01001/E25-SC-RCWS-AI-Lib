@@ -4,7 +4,7 @@
 #include <vector>
 #include <atomic>
 
-// TODO: implelente `AI::get_current_targets_color()` `AI::get_current_target_loc()`
+// TODO: implelente `AI::get_current_targets_color()` `AI::get_current_target_loc()`.
 
 
 class AudioModel;                         // Audio Class Declaration `include/AudioModel.hpp`
