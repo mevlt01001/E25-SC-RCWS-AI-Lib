@@ -65,6 +65,13 @@ class AI {
         std::atomic<bool> is_audio_busy{false}; 
 
     public:
+        /**
+        * Class has just one constructor. 
+        * `ds_config_path`: Deepstream configuration file path.
+        * `audio_model_path`: Pre-trained Audio Recognition model file path.
+        * `sample_rate`: Pre-trained Audio Recognition model sample rate.
+        * `max_sec`: Pre-trained Audio Recognition model maximum sound duration.
+        */
         AI(std::string ds_config_path, std::string audio_model_path, int sample_rate, int max_sec);
 
         // Starts Deepstream pipeline. The `AI::process_ds_data()` method will be triggered by each frame processed on Deepstream.
