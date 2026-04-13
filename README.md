@@ -5,6 +5,30 @@ Module occurs with to class: [`AI`](include/AIClass.hpp) and [`AudioModel`](incl
 
 `AI` class wraps `AudioModel` class, thats why you must not use `AudioModel` class directly.
 
+**Compiling:**
+
+The compiling process needs toch libraries, since [`libAI_class.so`](libAI_class.so) needs it.\
+Therefore, the best practice to use `torch` lib in C/C++ is using from python package. Because whole libs come compiled.\
+Use [miniconda](https://www.anaconda.com/docs/getting-started/miniconda/install/overview) to prevent system from torch conflicts.
+
+*consumed the conda installed.*
+```shell
+miniconda create -n libtorch python=3.10
+conda activate libtorch
+pip install torch==2.6.0 torchvision==0.21.0 torchaudio==2.6.0 --index-url https://download.pytorch.org/whl/cpu
+```
+
+after instalation `torch` you can complie your code with an C++ compiler by adding fallowing flags:
+```shell
+g++ main.cpp \
+-I./include/ \
+-L./build \
+-lAI_class \
+-Wl,-rpath,./build \
+-Wl,-rpath-link,$CONDA_PREFIX/lib/python3.10/site-packages/torch/lib \
+-Wl,-rpath-link,$CONDA_PREFIX/lib/python3.10/site-packages/torch.libs
+```
+
 
 ## `class AI`
 This is an orchestrator class. This class works in conjunction with the [`AudioModel`](include/AudioModel.hpp), which handles audio recording and target recognition functions.
