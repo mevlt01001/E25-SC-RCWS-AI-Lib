@@ -3,8 +3,11 @@
 
 #include <vector>
 #include <atomic>
+#include <mutex>
 
-// TODO: implelente `AI::get_current_targets_color()` `AI::get_current_target_loc()`.
+// Last Commit: DsObjectData updated, Mutex added, Test (CPP file) added. 
+//              DsObjectData updated to CXCYWH from XYWH. Mutex (AI::get_target_loc_mutex) added to AI::get_current_target_loc() and AI::process_ds_data. Example_main.cpp added to test. 
+// TODO: redesing Tracking ID and target loc function. Update DOC and readme.
 
 
 class AudioModel;                         // Audio Class Declaration `include/AudioModel.hpp`
@@ -54,15 +57,17 @@ class AI {
         // Madel trained maximum audio lenght                     
         int max_seconds;                     
         // Holds model recognized colors as boolean three value, red green blue respectively.
-        std::vector<bool> current_targets_color = std::vector<bool>(3, false); 
-        // holds current targets locations xywh format.
-        std::vector<std::vector<int>> current_targets_loc = std::vector<std::vector<int>>(1, std::vector<int>(4, 0));
-        // Holds the tracked target ID.
+        std::vector<bool> current_targets_color;
+        // holds current targets locations xywh-classId-trackID format.
+        std::vector<std::vector<float>> current_targets_loc;
+        // Holds the target tracked ID.
         int selected_target_id = -1;
         // Pointer of audio model class which provides audio process tools.
         AudioModel* audio_model = nullptr;                            
         // Whether audio is recording information for `AI::start_recording()` and `AI::stop_recording()`.
         std::atomic<bool> is_audio_busy{false}; 
+        // A mutex for detecten objects list to prevent rece condition between deepstrteam_app_main.c and this class.
+        std::mutex get_target_loc_mutex;
 
     public:
         /**
@@ -84,14 +89,17 @@ class AI {
         void stop_recording();
 
         // Retruns three boolean data that represents wheter selected color red green blue respectively.
-        std::vector<bool> get_current_targets_color();
+        const std::vector<bool>* get_current_targets_color();
 
-        // Returns the location one of bounding boxes that pairs `AI::selected_target_id` `AI::current_targets_color` which recognized with sound model. 
-        // Selected bbox ID will be attached to `AI::selected_target_id`.
-        std::vector<int> get_current_target_loc();
+        /**
+         * Retruns an 6 elements array pointer `AI::current_targets_loc[i]`.
+         * Firstly check if not setted `AI::selected_target_id` to -1. if not, set to `AI::current_targets_loc[0][5]` and returns `AI::current_targets_loc[0]` pointer.
+         * If set, retuns `AI::current_targets_loc[i]` which its classid pairs `AI::selected_target_id`. If not found, `AI::selected_target_id` get setted to `-1` return `nullptr`.
+         */
+        std::vector<float> get_current_target_loc();
 
         // Returns pointer of stored voice data. 
-        std::vector<float>* get_audio_data();
+        const std::vector<float>* get_audio_data();
 
         // Returns a boolean value that tell whether voice is recording. 
         bool get_is_recording();
@@ -99,10 +107,12 @@ class AI {
         // Designed to debug all data. Prints out all the information that class holded by `AI::class_info()`
         void get_class_info();
 
-    private:
         // Process the `DsObjectData`s got from Deepstream. Updates`AI::current_targets_loc`. It will be triggered by each frame.
         void process_ds_data(DsObjectData* obj_list, int num_objects, int frame_num);
 
+        void reset_tracking_color();
+
+    private:
         // Triggers inference for voice data. It will be trigered by end of the `AI::start_recording()` method.
         void audio_inference(std::vector<bool>& targets);
 

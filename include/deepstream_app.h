@@ -48,7 +48,7 @@ typedef struct DsObjectData DsObjectData;
 * 
 * Members:
 * `DsObjectData::class_id` refers to `NvDsObjectMeta::class_id` used get bbox class ID.
-* `DsObjectData::tracking_id` refers to `NvDsObjectMeta::object_id` used get bbox tracking ID
+* `DsObjectData::track_id` refers to `NvDsObjectMeta::object_id` used get bbox tracking ID
 * `DsObjectData::left` refers to `NvDsObjectMeta::rect_params.left` used get bbox left X
 * `DsObjectData::top` refers to `NvDsObjectMeta::rect_params.top` used get bbox top Y
 * `DsObjectData::width` refers to `NvDsObjectMeta::rect_params.width` used get bbox width
@@ -57,11 +57,11 @@ typedef struct DsObjectData DsObjectData;
 */
 struct DsObjectData{
     gint class_id;
-    guint64 tracking_id;
-    float left;
-    float top;
-    float width;
-    float height;
+    guint64 track_id;
+    float cx;
+    float cy;
+    float w;
+    float h;
     char label[128];
 };
 

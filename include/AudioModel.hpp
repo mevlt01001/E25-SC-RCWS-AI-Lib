@@ -84,6 +84,6 @@ class AudioModel {
         // Returns `is_recordings` to figure out data whether recorfing.
         bool get_is_recording() const;
         // Returns 'audio_buffer', this is thread-safe.
-        std::vector<float>* get_audio_buffer();
+        const std::vector<float>* get_audio_buffer();
 };
 #endif  // AUDIO_MODEL_HPP
