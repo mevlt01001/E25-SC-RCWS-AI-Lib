@@ -1,96 +1,111 @@
-# `Sound Controlled Object Selection and Tracking Module`
-*This module developed to an AI controlled robotics project, not for general purpose.*
+# Sound Controlled Object Selection and Tracking Module
 
-Module occurs with to class: [`AI`](include/AIClass.hpp) and [`AudioModel`](include/AudioModel.hpp). 
+*This module was developed for an AI-controlled robotics project, specifically for the **EngineerHub'25: Voice Controlled Remote Controlled Weapon System Software**, rather than for general-purpose use.*
 
-`AI` class wraps `AudioModel` class, thats why you must not use `AudioModel` class directly.
+*All instructions assume the NVIDIA Jetson AGX Orin (or Orin NX) utilizing this library has **DeepStream 7.1** installed. If not, please follow [these installation instructions](https://docs.nvidia.com/metropolis/deepstream/7.1/text/DS_Installation.html#jetson-setup).*
 
-**Compiling:**
+*Enjoy with your laser :)*
 
-The compiling process needs toch libraries, since [`libAI_class.so`](libAI_class.so) needs it.\
-Therefore, the best practice to use `torch` lib in C/C++ is using from python package. Because whole libs come compiled.\
-Use [miniconda](https://www.anaconda.com/docs/getting-started/miniconda/install/overview) to prevent system from torch conflicts.
+---
 
-*consumed the conda installed.*
+This module consists of two main classes: [`AI`](include/AIClass.hpp) and [`AudioModel`](include/AudioModel.hpp). 
+
+The `AI` class acts as an orchestrator and wraps the `AudioModel` class. **Therefore, you should interact only with the `AI` class and avoid using `AudioModel` directly.**
+
+## Compiling
+
+The compiling process requires Torch libraries since `libAI_class.so` depends on them.
+The best practice for using the `torch` library in C/C++ is fetching it from a Python package, as the libraries come pre-compiled. 
+We highly recommend using [Miniconda](https://docs.conda.io/en/latest/miniconda.html) to prevent system-wide conflicts.
+
+*Setting up the conda environment:*
 ```shell
 miniconda create -n libtorch python=3.10
 conda activate libtorch
 pip install torch==2.6.0 torchvision==0.21.0 torchaudio==2.6.0 --index-url https://download.pytorch.org/whl/cpu
 ```
 
-after instalation `torch` you can complie your code with an C++ compiler by adding fallowing flags:
+After installing `torch`, you can compile your code with a C++ compiler by adding the following flags:
 ```shell
-g++ main.cpp \
+g++ example_main_usage.cpp \
 -I./include/ \
--L./build \
--lAI_class \
--Wl,-rpath,./build \
--Wl,-rpath-link,$CONDA_PREFIX/lib/python3.10/site-packages/torch/lib \
--Wl,-rpath-link,$CONDA_PREFIX/lib/python3.10/site-packages/torch.libs
+-L./lib \
+-lAI \
+-Wl,-rpath,./lib \
+-Wl,-rpath-link,$(conda info --base)/envs/libtorch/lib/python3.10/site-packages/torch/lib \
+-Wl,-rpath-link,$(conda info --base)/envs/libtorch/lib/python3.10/site-packages/torch.libs
 ```
 
+---
 
 ## `class AI`
-This is an orchestrator class. This class works in conjunction with the [`AudioModel`](include/AudioModel.hpp), which handles audio recording and target recognition functions.
+This is the orchestrator class. It works in conjunction with the [`AudioModel`](include/AudioModel.hpp), which handles multi-threaded audio recording and target recognition functions seamlessly alongside the DeepStream pipeline.
 
 ### Example Usage:
 ```cpp
-// Init `AI` Class.
+// 1. Initialize the `AI` Class.
 AI* ai = new AI(
-      "path/to/deepstream_app.txt", // Deepstream configuration file path
-      "path/to/audio_model.pt",     // Pre trained Audio Recognition model file path
-      16000,                        // Pre trained Audio Recognition model sample rate
-      8                             // Pre trained Audio Recognition model maximum sound duration
+      "path/to/deepstream_app.txt", // DeepStream configuration file path
+      "path/to/audio_model.pt",     // Pre-trained Audio Recognition model file path
+      16000,                        // Target sample rate for the audio model
+      8                             // Maximum recording duration in seconds
 ); 
 
-ai->run_deepstream();               // Starts Deepstream pipeline
-ai->start_recording();              // Starts voice recording.
-ai->stop_recording();               // Stops voice recording.
+// 2. Start pipelines
+ai->run_deepstream();               // Starts DeepStream pipeline in a detached thread
+ai->start_recording();              // Starts voice recording
+ai->stop_recording();               // Stops recording and triggers inference
 
-// Retruns three boolean data that represents wheter selected color red green blue respectively.
-std::vector<bool> targets_color = ai->get_current_targets_color();
+// 3. Fetch Data (Thread-Safe)
+// Returns three boolean data representing whether the selected color is Red, Green, or Blue.
+const std::vector<bool>* targets_color = ai->get_current_targets_color();
 
-// Returns the location one of bounding boxes that pairs `AI::selected_target_id` `AI::current_targets_color`.
-std::vector<int> target_loc = ai->get_current_targets_loc();
+// Returns the location of the locked bounding box based on voice command.
+// Format: [cx, cy, w, h, class_id, tracking_id]. Returns {} if no target is found.
+std::vector<float> target_loc = ai->get_current_target_loc();
 
-// Returns the pointer of the stored sound amplitude data. Normalized 0-1.
-std::vector<float>* stored_data_ptr = ai->get_audio_data();
+// Returns the pointer to the raw sound amplitude data.
+const std::vector<float>* stored_data_ptr = ai->get_audio_data();
+
+// 4. Reset tracking if needed
+ai->reset_tracking();               // Clears current target lock until a new voice command is given.
 
 delete ai;
 ```
 
 ### Class Members
+
 #### Variables
-- **`ds_config_file_path`**: Deepstream configuration file path.
-- **`audio_model_file_path`**: Audio recognition model pack file path.
-- **`target_sr`**: Model trained sample rate.
-- **`max_seconds`**: Model trained maximum audio lenght.
-- **`current_targets_color`**: Holds model recognized colors as boolean three value, red green blue respectively. Default initialized to false.
-- **`current_targets_loc`**: Holds current targets locations in xywh format.
-- **`selected_target_id`**: Holds the tracked target ID.
-- **`audio_model`**: Pointer of the AudioModel class which provides audio process tools.
-- **`is_audio_busy`**: Atomic boolean indicating whether audio is recording. Used for `AI::start_recording()` and `AI::stop_recording()`.
+- **`ds_config_file_path`**: DeepStream configuration file path.
+- **`audio_model_file_path`**: Audio recognition model `.pt` file path.
+- **`target_sr`**: Sample rate expected by the model.
+- **`max_seconds`**: Maximum audio length expected by the model.
+- **`current_targets_color`**: Holds model-recognized colors as a boolean array (Red, Green, Blue). Default initialized to false.
+- **`current_targets_loc`**: Holds current target locations dynamically in `[cx, cy, w, h, class_id, tracking_id]` format.
+- **`selected_target_id`**: Holds the tracked target's DeepStream Object ID.
+- **`audio_model`**: Pointer to the `AudioModel` class instance.
+- **`is_audio_busy`**: Atomic boolean indicating whether audio is currently recording. Used for `AI::start_recording()` and `AI::stop_recording()`.
+- **`get_target_loc_mutex`**: Recursive mutex ensuring thread-safe data transfer between DeepStream callbacks and C++ logic.
 
 #### Functions
-- **`AI(std::string ds_config_path, std::string audio_model_path, int sample_rate, int max_sec)`**: Constructor.
-  - `ds_config_path`: Deepstream configuration file path.
-  - `audio_model_path`: Pre-trained Audio Recognition model file path.
-  - `sample_rate`: Pre-trained Audio Recognition model sample rate.
-  - `max_sec`: Pre-trained Audio Recognition model maximum sound duration.
-- **`run_deepstream()`**: Starts Deepstream pipeline. The `AI::process_ds_data()` method will be triggered by each frame processed on Deepstream.
-- **`start_recording()`**: Starts voice recording.
-- **`stop_recording()`**: Stops voice recording.
-- **`get_current_targets_color()`**: Returns three boolean data that represents whether the selected color is red, green, or blue respectively.
-- **`get_current_targets_loc()`**: Returns the location of one of the bounding boxes that equal to `AI::selected_target_id` and `AI::current_targets_color` which was recognized with the sound model. The selected bbox ID will be attached to `AI::selected_target_id`.
-- **`get_audio_data()`**: Returns a pointer to the stored voice data.
-- **`get_is_recording()`**: Returns a boolean value that indicates whether voice is currently recording.
-- **`get_class_info()`**: Designed to debug all data. Prints out all the information that the class holds by calling `AI::class_info()`.
-- **`process_ds_data(DsObjectData* obj_list, int num_objects, int frame_num)`**: Processes the `DsObjectData`s obtained from Deepstream. Updates `AI::current_targets_loc`. It will be triggered by each frame. It is private.
-- **`audio_inference(std::vector<bool>& targets)`**: Triggers inference for voice data. It will be triggered at the end of the `AI::start_recording()` method. It is private.
-- **`class_info()`**: Prints out all the internal information and states held by the class. It is private.
+- **`AI(...)`**: Constructor configuring both DeepStream and Audio parameters.
+- **`run_deepstream()`**: Starts the DeepStream pipeline. The `process_ds_data()` method will be triggered by each frame.
+- **`start_recording()`**: Starts voice recording securely.
+- **`stop_recording()`**: Stops voice recording and starts the PyTorch inference thread.
+- **`get_current_targets_color()`**: Returns the active colors identified by the audio model.
+- **`get_current_target_loc()`**: Recursively locks onto and returns the 6-element location data of the valid target.
+- **`get_audio_data()`**: Returns a pointer to the stored voice buffer.
+- **`get_is_recording()`**: Returns a boolean indicating if the microphone is active.
+- **`reset_tracking()`**: Clears the active target colors and tracking IDs.
+- **`get_class_info()`**: Prints debug information to the standard output.
+- **`process_ds_data(...)`**: Processes bounding box data from DeepStream. Updates `AI::current_targets_loc`. It is private.
+- **`audio_inference(...)`**: Triggers inference for voice data. It is private.
+- **`class_info()`**: Prints out all the internal states held by the class. It is private.
 
-## `class AudioModel`
-`AudioModel` is a thread-safe class works to access microphone, to record audio data and provide inference funcitons it on `torch::jit`.
+---
+
+## `class AudioModel` (Internal Use)
+`AudioModel` is a thread-safe class designed to access the microphone, record audio data via `miniaudio`, and provide inference functions using `torch::jit`.
 
 ### Example Usage:
 ```cpp
@@ -99,7 +114,7 @@ audio_model->start_recording(); // Starts the voice recording.
 audio_model->stop_recording();  // Stops the voice recording.
 
 // Access to the recorded data
-std::vector<float>* audio_data = audio_model->get_audio_buffer();
+const std::vector<float>* audio_data = audio_model->get_audio_buffer();
 
 // Access info if voice recording
 bool audio_recording = audio_model->get_is_recording();
@@ -111,42 +126,29 @@ torch::Tensor audio_tensor = audio_model->toTorchTensor();
 torch::Tensor result = audio_model->inference(audio_tensor);
 
 // Access to targets 
-std::vector<bool>& targets = audio_model->get_targets();
+std::vector<bool> targets = audio_model->get_targets();
 ```
 
 ### Class Members
+
 #### Variables
-- `is_recording`: Holds a boolean if the model recording.\
-- `audio_buffer`: Holds recorded data.\
-- `model`: Pretrained Audio recognition model.\
-- `buffer_mutex`: Mutex for audio buffer while data saving.\
-- `ds_config_file_path`: Deepstream configuration file path.\
-- `audio_model_file_path`: Audio recognition model pack file path.\
-- `target_sr`: Model trained sample rate.\
-- `max_seconds`: Madel trained maximum audio lenght.\
-- `targets`: Recognized Targest boolean val for Red, Green, Blue respectively.
+- **`is_recording`**: Holds a boolean if the model is recording.
+- **`audio_buffer`**: Holds recorded raw floating-point audio data.
+- **`model`**: Pretrained PyTorch JIT model.
+- **`buffer_mutex`**: Mutex protecting the audio buffer during active recording.
+- **`targets`**: Recognized targets boolean values for Red, Green, and Blue respectively.
 
 #### Functions
-- **`AudioModel(const std::string& model_path, int sample_rate = 16000, int max_sec = 8)`**: **Constructor**. Class has just one constructor.\
-  - `model_path` is audio model absolute path. Used for `torch::jit::load(model_path)`.\
-  - `sample_rate` is microphone sound access count per time. It effect sound quality directly. And model must have trained dedicated sample rate. Default is 16000 (16Khz).\
-  - `max_sec` is maximum second of model can process. if recorded data longer than `max_sec` then it will cropped till 'max_sec', but if recorded data shorter than `max_sec` then it will be padded with zeros till data riched as data as much amound of 'max_sec'. This default is 8 (8 seconds).
-
-- **`data_callback`**: Microphone data record funciton in each frame (sound package). It is private.
-
-- **`start_recording()`**: Firstly cleans to the `audio_buffer` using `buffer_mutex` and then starts to read microphone.
-
-- **`stop_recording()`**: Stops recording.
-
-- **`toTorchTensor()`**: Convert to torch tensor from vector data. If `audio_buffer` is empty, it returns an empty torch tensor.
-
-- **`preprocess_audio()`**: Data preprocessor according to the 'max_sec'
-
-- **`inference(torch::Tensor recorded_data)`**: Takes input data (`recorded_data`), runs model, attach `targets` returns out data. Returned data is empty when `audio_buffer` is empty or inference had met an error. In the other hand, returns raw color data which model recognized.
-
+- **`AudioModel(const std::string& model_path, int sample_rate = 16000, int max_sec = 8)`**: Constructor.
+  - `model_path`: Absolute path to the audio model.
+  - `sample_rate`: Expected sample rate. Default is 16000 (16Khz).
+  - `max_sec`: Maximum seconds the model can process. If recorded data is longer, it will be cropped. If shorter, it will be padded with zeros. Default is 8.
+- **`data_callback(...)`**: Microphone data record function in each frame. It is private.
+- **`start_recording()`**: Clears the `audio_buffer` securely and starts reading from the microphone.
+- **`stop_recording()`**: Stops the microphone stream.
+- **`toTorchTensor()`**: Converts the vector buffer into a 2D `torch::Tensor`.
+- **`preprocess_audio(...)`**: Truncates or pads the raw audio tensor to match the `max_seconds` exactly.
+- **`inference(torch::Tensor recorded_data)`**: Feeds the preprocessed data into the model, updates the `targets` boolean array, and returns the raw output tensor.
 - **`get_targets()`**: Returns attached `targets`.
-
-- **`get_is_recording()`**: Returns `is_recordings` to figure out data whether recorfing.
-
-- **`get_audio_buffer()`**: Returns 'audio_buffer', this is thread-safe.
-
+- **`get_is_recording()`**: Returns `is_recording` flag.
+- **`get_audio_buffer()`**: Returns a pointer to the `audio_buffer`. This is thread-safe.
