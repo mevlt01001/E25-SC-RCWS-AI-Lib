@@ -1,6 +1,6 @@
 # Sound Controlled Object Selection and Tracking Module
 
-*This module was developed for an AI-controlled robotics project, specifically for the **EngineerHub'25: Voice Controlled Remote Controlled Weapon System Software**, rather than for general-purpose use.*
+*This module was developed for an AI-controlled robotics project, specifically for the __EngineerHub'25: Voice Controlled, Remote Controlled Weapon Station Software__, rather than for general-purpose use.*
 
 *All instructions assume the NVIDIA Jetson AGX Orin (or Orin NX) utilizing this library has **DeepStream 7.1** installed. If not, please follow [these installation instructions](https://docs.nvidia.com/metropolis/deepstream/7.1/text/DS_Installation.html#jetson-setup).*
 
