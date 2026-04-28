@@ -150,6 +150,12 @@ class AI {
          */
         void reset_tracking();
 
+        /**
+         * @brief Retrieves the currently selected target's tracking ID.
+         * * @return int The tracking ID of the currently selected target, or -1 if no target is selected.
+         */
+        int get_selected_target_id();
+
     private:
         /**
          * @brief Performs inference on the recorded audio buffer using the PyTorch model.

@@ -57,6 +57,12 @@ int main(int argc, char* argv[]) {
                         " y:" + std::to_string((int)(loc)[1]);
         }
 
+        std::string tracking_id_str = "No Target";
+        int selected_id = ai->get_selected_target_id();
+        if (selected_id != -1) {
+            tracking_id_str = std::to_string(selected_id);
+        }
+
         int ses_boyut = 0;
         const std::vector<float>* audio_data = ai->get_audio_data();
         if (audio_data) {
@@ -67,6 +73,7 @@ int main(int argc, char* argv[]) {
                   << "[" << durum << "] "
                   << "Color(R,G,B):" << renk_str << " | "
                   << "Location:" << konum_str << " | "
+                  << "Tracking ID:" << tracking_id_str << " | "
                   << "Sound Buff Lenght:" << ses_boyut << " | "
                   << "[r/q/ENTER]: " << std::flush;
 

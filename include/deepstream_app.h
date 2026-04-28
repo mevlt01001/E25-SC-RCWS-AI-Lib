@@ -63,6 +63,7 @@ struct DsObjectData{
     float w;
     float h;
     char label[128];
+    NvOSD_RectParams* rect;
 };
 
 typedef void ExternalBboxCallback (DsObjectData* obj_list, int num_objects, int frame_num);
