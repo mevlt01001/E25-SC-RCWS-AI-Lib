@@ -16,3 +16,4 @@ my_ai_app
 makefile
 *.txt
 a.out
+*model*
