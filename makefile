@@ -17,8 +17,10 @@ TORCH_LIBS = $(CONDA_ENV)/lib/python3.10/site-packages/torch.libs
 # Deepstream Root directory, we used detect and got NvDsMeta struct data from.
 DS_ROOT = /opt/nvidia/deepstream/deepstream
 
-# to find gstreamer libraries
+# to find gstreamer headers and libraries
 PKGS = gstreamer-1.0 gstreamer-video-1.0 x11 json-glib-1.0 glib-2.0
+GST_INCLUDES = $(shell pkg-config --cflags $(PKGS))
+GST_LIBS = $(shell pkg-config --libs $(PKGS))
 
 # Include paths
 INCLUDES = \
@@ -29,7 +31,7 @@ INCLUDES = \
     -I$(DS_ROOT)/sources/apps/apps-common/includes \
     -I$(DS_ROOT)/sources/includes \
     -I/usr/local/cuda/include \
-    $(shell pkg-config --cflags $(PKGS))
+    GST_INCLUDES
 
 # Library paths
 LIB_DIRS = \
@@ -52,15 +54,17 @@ LIBS = \
     -lnvdsgst_meta -lnvds_meta -lnvds_utils \
     -lnvdsgst_helper -lnvdsgst_customhelper -lnvdsgst_smartrecord -lnvds_msgbroker \
     -lgstrtspserver-1.0 -lcuda -lcudart -lyaml-cpp -lm -ldl \
-    $(shell pkg-config --libs $(PKGS))
+    GST_LIBS
 
 # Source codes
 SRCS  = $(wildcard src/*.cpp)
 SRCS += $(wildcard src/*.c)
+
 # Deepstream source codes
 SRCS += $(wildcard $(DS_ROOT)/sources/apps/apps-common/src/*.c)
 SRCS += $(wildcard $(DS_ROOT)/sources/apps/apps-common/src/deepstream-yaml/*.cpp)
-# Virtual paths, to makefile understand where the files in
+
+# Virtual paths, to makefile understand where the files in. Because we are using deepstream source files which do not exist our working path
 VPATH = src:$(DS_ROOT)/sources/apps/apps-common/src:$(DS_ROOT)/sources/apps/apps-common/src/deepstream-yaml
 
 # compiled object files, compliler generates them in BUILD_DIR
