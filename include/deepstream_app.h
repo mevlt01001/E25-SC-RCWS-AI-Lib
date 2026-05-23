@@ -66,10 +66,21 @@ struct DsObjectData{
     NvOSD_RectParams* rect;
 };
 
-typedef void ExternalBboxCallback (DsObjectData* obj_list, int num_objects, int frame_num);
 
+typedef void ExternalBboxCallback (DsObjectData* obj_list, int num_objects, int frame_num);
 void set_external_bbox_callback(ExternalBboxCallback* cb);
 
+typedef void ExternalWHSetterCallback (int w, int h);
+void set_external_w_h(ExternalWHSetterCallback* cb);
+
+/**
+ * This function make zoom by scorping image in the pipeline by `nvvideoconvert` element.
+ */
+void apply_zoom_ds(int x, int y, int w, int h);
+
+/**
+ * deepstrteam-app main (entry point) code.
+ */
 int deepstream_app_main (int argc, char *argv[]);
 
 // ### End of Addition to deepstream/sources/apps/sample_apps/deepstream-app/deepstream_app.h #########

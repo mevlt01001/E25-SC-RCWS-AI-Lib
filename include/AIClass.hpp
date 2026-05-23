@@ -41,10 +41,13 @@ struct DsObjectData;                      // A struct to store `NvDsObjectMeta` 
  */
 class AI {
     private:
+        float zoom_factor;
         // Deepstream configuration file path
         std::string ds_config_file_path;     
         // Audio recognition model pack file path         
-        std::string audio_model_file_path;       
+        std::string audio_model_file_path;      
+        // Video Width and Height. 
+        int video_w, video_h;
         // Model trained sample rate         
         int target_sr;                 
         // Model trained maximum audio length                     
@@ -116,8 +119,32 @@ class AI {
         std::vector<float> get_current_target_loc();
 
         /**
+         * @brief changes selected targets by given direciton information.
+         * @param direction This is an integer parameter which presents as 12,13,14,15 \
+         *  BUTTON_LEFT, BUTTON_RIGHT, BUTTON_UP, BUTTON_DOWN respectively.
+         */
+        void change_current_target_by(int direction);
+
+        /**
+         * @brief calculates zoomed frames xywh points. For example to make 1x zoom for 1920x1080 dimensioned frame \
+         * calculated xywh 0,0,1920, 1080 respectively. Max 40x.
+         * @param zoom_factor it is a 0-1 normalized zoom factor. 0 is 1x zoom, 1 is 40x zoom. Calcultaed by `std::pow(40.0f, zoom_factor)`
+         */
+        void apply_zoom(float zoom_factor);
+
+        /**
+         * Returns AI::video_w.
+         */
+        int get_video_w();
+
+        /**
+         * Returns AI::video_h.
+         */
+        int get_video_h();
+
+        /**
          * @brief Retrieves the raw audio buffer data from the audio model.
-         * * @return const std::vector<float>* A pointer to the floating-point audio data buffer.
+         * @return const std::vector<float>* A pointer to the floating-point audio data buffer.
          */
         const std::vector<float>* get_audio_data();
 
@@ -134,16 +161,6 @@ class AI {
         void get_class_info();
 
         /**
-         * @brief Processes bounding box data received from the DeepStream pipeline.
-         * This method is thread-safe. It locks `get_target_loc_mutex` to safely clear
-         * and update `current_targets_loc` with objects that match the actively selected colors.
-         * * @param obj_list Pointer to the array of object data from the current frame.
-         * * @param num_objects Number of objects detected.
-         * * @param frame_num The current frame number.
-         */
-        void process_ds_data(DsObjectData* obj_list, int num_objects, int frame_num);
-
-        /**
          * @brief Resets the actively tracked colors and the currently selected target ID.
          * Clears the boolean color flags (sets all to false) and resets `selected_target_id` to -1,
          * effectively halting the tracking of the current object until a new voice command is processed.
@@ -156,7 +173,30 @@ class AI {
          */
         int get_selected_target_id();
 
+        /**
+         * @brief Return zoom factor. 
+         */
+        float get_zoom_factor();
+
     private:
+
+        /**
+         * @brief Processes bounding box data received from the DeepStream pipeline.
+         * This method is thread-safe. It locks `get_target_loc_mutex` to safely clear
+         * and update `current_targets_loc` with objects that match the actively selected colors.
+         * * @param obj_list Pointer to the array of object data from the current frame.
+         * * @param num_objects Number of objects detected.
+         * * @param frame_num The current frame number.
+         */
+        void process_ds_data(DsObjectData* obj_list, int num_objects, int frame_num);
+
+        /**
+         * This method used callback at deepstream_app_main.c file to set `AI::video_w`, `AI::video_h`.
+         * * @param w Width
+         * * @param h Height
+         */
+        void set_w_h(int w, int h);
+
         /**
          * @brief Performs inference on the recorded audio buffer using the PyTorch model.
          * Converts the audio buffer to a LibTorch tensor, runs it through the model,
