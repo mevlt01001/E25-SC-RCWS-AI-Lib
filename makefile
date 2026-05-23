@@ -31,7 +31,7 @@ INCLUDES = \
     -I$(DS_ROOT)/sources/apps/apps-common/includes \
     -I$(DS_ROOT)/sources/includes \
     -I/usr/local/cuda/include \
-    GST_INCLUDES
+    $(GST_INCLUDES)
 
 # Library paths
 LIB_DIRS = \
@@ -54,7 +54,7 @@ LIBS = \
     -lnvdsgst_meta -lnvds_meta -lnvds_utils \
     -lnvdsgst_helper -lnvdsgst_customhelper -lnvdsgst_smartrecord -lnvds_msgbroker \
     -lgstrtspserver-1.0 -lcuda -lcudart -lyaml-cpp -lm -ldl \
-    GST_LIBS
+    $(GST_LIBS)
 
 # Source codes
 SRCS  = $(wildcard src/*.cpp)

@@ -68,9 +68,17 @@ struct DsObjectData{
 
 
 typedef void ExternalBboxCallback (DsObjectData* obj_list, int num_objects, int frame_num);
-void set_external_bbox_callback(ExternalBboxCallback* cb);
-
 typedef void ExternalWHSetterCallback (int w, int h);
+
+/**
+ * This namespace include callbacks linker functions
+ */
+// namespace callbacks {
+//   void set_external_bbox_callback(ExternalBboxCallback* cb);
+//   void set_external_w_h(ExternalWHSetterCallback* cb);
+// }
+
+void set_external_bbox_callback(ExternalBboxCallback* cb);
 void set_external_w_h(ExternalWHSetterCallback* cb);
 
 /**

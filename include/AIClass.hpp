@@ -178,8 +178,6 @@ class AI {
          */
         float get_zoom_factor();
 
-    private:
-
         /**
          * @brief Processes bounding box data received from the DeepStream pipeline.
          * This method is thread-safe. It locks `get_target_loc_mutex` to safely clear
@@ -189,13 +187,16 @@ class AI {
          * * @param frame_num The current frame number.
          */
         void process_ds_data(DsObjectData* obj_list, int num_objects, int frame_num);
-
+    
         /**
          * This method used callback at deepstream_app_main.c file to set `AI::video_w`, `AI::video_h`.
          * * @param w Width
          * * @param h Height
          */
         void set_w_h(int w, int h);
+        
+    private:
+
 
         /**
          * @brief Performs inference on the recorded audio buffer using the PyTorch model.
