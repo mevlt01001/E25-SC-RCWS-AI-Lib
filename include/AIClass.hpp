@@ -40,6 +40,9 @@ struct DsObjectData;                      // A struct to store `NvDsObjectMeta` 
  * ```
  */
 class AI {
+    public:
+        // Flag for reticle point calibration. If it is true, reticle point will not move and zoomed frame will be centered.
+        float calibrating;
     private:
         float zoom_factor;
         // Deepstream configuration file path
@@ -194,7 +197,29 @@ class AI {
          * * @param h Height
          */
         void set_w_h(int w, int h);
-        
+
+        /**
+         * @brief Retrieves the current X coordinate of the reticle.
+         * * @return int The X coordinate of the reticle.
+         */
+        int get_reticle_x();
+
+        /**
+         * @brief Retrieves the current Y coordinate of the reticle.
+         * * @return int The Y coordinate of the reticle.
+         */
+        int get_reticle_y();
+
+        /**
+         * @brief Moves the reticle point in the specified direction.
+         * The direction parameter corresponds to specific movement directions:
+         * - 8: Move Left
+         * - 9: Move Right
+         * - 10: Move Up
+         * - 11: Move Down
+         */
+        void reticle_point_move(int direction);
+
     private:
 
 

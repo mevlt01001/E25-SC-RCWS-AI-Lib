@@ -70,21 +70,28 @@ struct DsObjectData{
 typedef void ExternalBboxCallback (DsObjectData* obj_list, int num_objects, int frame_num);
 typedef void ExternalWHSetterCallback (int w, int h);
 
-/**
- * This namespace include callbacks linker functions
- */
-// namespace callbacks {
-//   void set_external_bbox_callback(ExternalBboxCallback* cb);
-//   void set_external_w_h(ExternalWHSetterCallback* cb);
-// }
-
 void set_external_bbox_callback(ExternalBboxCallback* cb);
 void set_external_w_h(ExternalWHSetterCallback* cb);
+
+void ds_set_zoom(int z);
+void ds_set_reticle_x(int x);
+void ds_set_reticle_y(int y);
+void ds_set_reticle_40x_X_point(int x);
+void ds_set_reticle_40x_Y_point(int y);
+int ds_get_reticle_40x_X_point();
+int ds_get_reticle_40x_Y_point();
+int ds_get_reticle_x();
+int ds_get_reticle_y();
+
+void ds_40x_zoom_reticle_point_left();
+void ds_40x_zoom_reticle_point_right();
+void ds_40x_zoom_reticle_point_up();
+void ds_40x_zoom_reticle_point_down();
 
 /**
  * This function make zoom by scorping image in the pipeline by `nvvideoconvert` element.
  */
-void apply_zoom_ds(int x, int y, int w, int h);
+void ds_apply_zoom(int x, int y, int w, int h);
 
 /**
  * deepstrteam-app main (entry point) code.
